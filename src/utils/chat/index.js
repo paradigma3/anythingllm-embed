@@ -16,6 +16,10 @@ export default function handleChat(
     errorMsg = null,
   } = chatResult;
 
+  // Preserve the sentAt from the last message in the chat history
+  const lastMessage = _chatHistory[_chatHistory.length - 1];
+  const sentAt = lastMessage?.sentAt;
+
   if (type === "abort") {
     setLoadingResponse(false);
     setChatHistory([
@@ -30,6 +34,7 @@ export default function handleChat(
         errorMsg,
         animate: false,
         pending: false,
+        sentAt,
       },
     ]);
     _chatHistory.push({
@@ -42,6 +47,7 @@ export default function handleChat(
       errorMsg,
       animate: false,
       pending: false,
+      sentAt,
     });
   } else if (type === "textResponse") {
     setLoadingResponse(false);
@@ -57,6 +63,7 @@ export default function handleChat(
         errorMsg,
         animate: !close,
         pending: false,
+        sentAt,
       },
     ]);
     _chatHistory.push({
@@ -69,6 +76,7 @@ export default function handleChat(
       errorMsg,
       animate: !close,
       pending: false,
+      sentAt,
     });
   } else if (type === "textResponseChunk") {
     const chatIdx = _chatHistory.findIndex((chat) => chat.uuid === uuid);
@@ -83,6 +91,7 @@ export default function handleChat(
         closed: close,
         animate: !close,
         pending: false,
+        sentAt,
       };
       _chatHistory[chatIdx] = updatedHistory;
     } else {
@@ -96,6 +105,7 @@ export default function handleChat(
         closed: close,
         animate: !close,
         pending: false,
+        sentAt,
       });
     }
     setChatHistory([..._chatHistory]);

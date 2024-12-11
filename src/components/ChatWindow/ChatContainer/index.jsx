@@ -32,13 +32,14 @@ export default function ChatContainer({
 
     const prevChatHistory = [
       ...chatHistory,
-      { content: message, role: "user" },
+      { content: message, role: "user", sentAt: Math.floor(Date.now() / 1000) },
       {
         content: "",
         role: "assistant",
         pending: true,
         userMessage: message,
         animate: true,
+        sentAt: Math.floor(Date.now() / 1000),
       },
     ];
     setChatHistory(prevChatHistory);
