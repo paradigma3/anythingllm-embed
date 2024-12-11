@@ -6,7 +6,7 @@ import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
 import { formatDate } from "@/utils/date";
 
 const PromptReply = forwardRef(
-  ({ uuid, reply, pending, error, sources = [] }, ref) => {
+  ({ uuid, reply, pending, error, sources = [], sentAt }, ref) => {
     if (!reply && sources.length === 0 && !pending && !error) return null;
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
@@ -98,11 +98,13 @@ const PromptReply = forwardRef(
             </div>
           </div>
         </div>
-        <div
-          className={`allm-text-[10px] allm-text-gray-400 allm-ml-[54px] allm-mr-6 allm-mt-2 allm-text-left allm-font-sans`}
-        >
-          {formatDate(Date.now() / 1000)}
-        </div>
+        {sentAt && (
+          <div
+            className={`allm-text-[10px] allm-text-gray-400 allm-ml-[54px] allm-mr-6 allm-mt-2 allm-text-left allm-font-sans`}
+          >
+            {formatDate(sentAt)}
+          </div>
+        )}
       </div>
     );
   }
