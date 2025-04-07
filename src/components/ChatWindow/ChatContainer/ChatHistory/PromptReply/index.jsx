@@ -1,5 +1,5 @@
 import { forwardRef, memo } from "react";
-import { Warning } from "@phosphor-icons/react";
+import { Warning, CircleNotch } from "@phosphor-icons/react";
 import renderMarkdown from "@/utils/chat/markdown";
 import { embedderSettings } from "@/main";
 import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
@@ -27,8 +27,9 @@ const PromptReply = forwardRef(
             }}
             className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col ${embedderSettings.ASSISTANT_STYLES.base} allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)]`}
           >
-            <div className="allm-flex allm-gap-x-5">
-              <div className="allm-mx-4 allm-my-1 allm-dot-falling"></div>
+            <div className="allm-flex allm-items-center allm-gap-x-2">
+              <CircleNotch size={16} className="allm-text-gray-400 allm-animate-spin" />
+              <span className="allm-text-gray-400 allm-text-sm">Thinking...</span>
             </div>
           </div>
         </div>

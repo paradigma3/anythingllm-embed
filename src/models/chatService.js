@@ -23,6 +23,63 @@ const ChatService = {
         return [];
       });
   },
+
+  getEmbedConfig: async function(embedId) {
+    try {
+      const response = await fetch(`http://localhost:3000/api/embed-config/${embedId}`);
+      if (!response.ok) throw new Error("Failed to fetch embed config");
+      const config = await response.json();
+      return config;
+    } catch (e) {
+      console.error("Error fetching embed config:", e);
+      return null;
+    }
+  },
+
+  embedFaqs: async function (embedSettings) {
+    const { embedId } = embedSettings;
+    try {
+      // First get the embed config to get the numeric ID
+      const config = await this.getEmbedConfig(embedId);
+      if (!config || !config.id) {
+        console.error("Could not get embed config ID");
+        return [];
+      }
+
+      // Now fetch FAQs using the numeric ID
+      const response = await fetch(`http://localhost:3001/api/embed-faqs/${config.id}/faqs`);
+      if (!response.ok) throw new Error("Failed to fetch FAQs");
+      
+      const data = await response.json();
+      return data.faqs || [];
+    } catch (e) {
+      console.error("Error fetching FAQs:", e);
+      return [];
+    }
+  },
+
+  embedArticles: async function (embedSettings) {
+    const { embedId } = embedSettings;
+    try {
+      // First get the embed config to get the numeric ID
+      const config = await this.getEmbedConfig(embedId);
+      if (!config || !config.id) {
+        console.error("Could not get embed config ID");
+        return [];
+      }
+
+      // Now fetch Articles using the numeric ID
+      const response = await fetch(`http://localhost:3000/api/embed-faqs/${config.id}/articles`);
+      if (!response.ok) throw new Error("Failed to fetch Articles");
+      
+      const data = await response.json();
+      return data || [];
+    } catch (e) {
+      console.error("Error fetching Articles:", e);
+      return [];
+    }
+  },
+
   resetEmbedChatSession: async function (embedSettings, sessionId) {
     const { baseApiUrl, embedId } = embedSettings;
     return await fetch(`${baseApiUrl}/${embedId}/${sessionId}`, {

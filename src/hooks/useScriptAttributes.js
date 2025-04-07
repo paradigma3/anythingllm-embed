@@ -4,6 +4,7 @@ import { embedderSettings } from "../main";
 const DEFAULT_SETTINGS = {
   embedId: null, //required
   baseApiUrl: null, // required
+  baseApiFaq: null, // FAQ endpoint
 
   // Override properties that can be defined.
   prompt: null, // override

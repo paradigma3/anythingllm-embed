@@ -57,7 +57,8 @@ export default function ChatWindowHeader({
         />
       </div>
       <div className="allm-absolute allm-right-0 allm-flex allm-gap-x-1 allm-items-center allm-px-[22px]">
-        {settings.loaded && (
+        {/* This is kinda shit */}
+        {/* {settings.loaded && (
           <button
             ref={buttonRef}
             type="button"
@@ -67,15 +68,7 @@ export default function ChatWindowHeader({
           >
             <DotsThreeOutlineVertical size={20} weight="fill" />
           </button>
-        )}
-        <button
-          type="button"
-          onClick={closeChat}
-          className="allm-bg-transparent hover:allm-cursor-pointer allm-border-none hover:allm-bg-gray-100 allm-rounded-sm allm-text-slate-800/60"
-          aria-label="Close"
-        >
-          <X size={20} weight="bold" />
-        </button>
+        )} */}
       </div>
       <OptionsMenu
         settings={settings}
