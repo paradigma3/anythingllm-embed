@@ -6,6 +6,7 @@ import { v4 } from "uuid";
 import createDOMPurify from "dompurify";
 import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
 import { formatDate } from "@/utils/date";
+import Suggestions from "../Suggestions";
 
 const DOMPurify = createDOMPurify(window);
 const HistoricalMessage = forwardRef(
@@ -18,6 +19,8 @@ const HistoricalMessage = forwardRef(
       error = false,
       errorMsg = null,
       sentAt,
+      suggestions = [],
+      widgets = [],
     },
     ref
   ) => {
@@ -89,6 +92,43 @@ const HistoricalMessage = forwardRef(
             </div>
           </div>
         </div>
+
+        {/* Render suggestions if available */}
+        {role === "assistant" && suggestions && suggestions.length > 0 && (
+          <Suggestions suggestions={suggestions} />
+        )}
+
+        {/* Render widgets if available */}
+        {role === "assistant" && widgets && widgets.length > 0 && (
+          <div className="allm-mt-4 allm-ml-[54px] allm-mr-6">
+            {widgets.map((widget) => {
+              if (widget.type === "gallery" && widget.images) {
+                try {
+                  const images = JSON.parse(widget.images);
+                  return (
+                    <div key={widget.id} className="allm-mb-4">
+                      <h3 className="allm-text-sm allm-font-medium allm-mb-2">{widget.label}</h3>
+                      <div className="allm-grid allm-grid-cols-2 allm-gap-2">
+                        {images.map((image, index) => (
+                          <img 
+                            key={index} 
+                            src={image} 
+                            alt={`Gallery image ${index + 1}`} 
+                            className="allm-rounded-lg allm-w-full allm-h-auto allm-object-cover allm-max-h-[150px]"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                } catch (e) {
+                  console.error("Error parsing gallery images:", e);
+                  return null;
+                }
+              }
+              return null;
+            })}
+          </div>
+        )}
 
         {sentAt && (
           <div

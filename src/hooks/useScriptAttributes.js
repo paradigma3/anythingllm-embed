@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS = {
   windowHeight: null, // height of chat window in number:css-prefix
   windowWidth: null, // width of chat window in number:css-prefix
   textSize: null, // text size in px (number only)
-
+  backgroundImageUrl: "https://c4.wallpaperflare.com/wallpaper/383/217/191/abstract-pattern-mosaic-design-wallpaper-preview.jpg",
   // behaviors
   openOnLoad: "off", // or "on"
   supportEmail: null, // string of email for contact

@@ -73,6 +73,8 @@ REQUIRED data attributes:
 
 - `data-brand-image-url` — URL to image that will be show at the top of the chat when chat is open.
 
+- `data-background-image-url` — URL to image that will be used as background in the home tab. Defaults to a mosaic pattern if not provided.
+
 - `data-greeting` — Default text message to be shown when chat is opened and no previous message history is found.
 
 - `data-no-sponsor` — Setting this attribute to anything will hide the custom or default sponsor at the bottom of an open chat window.

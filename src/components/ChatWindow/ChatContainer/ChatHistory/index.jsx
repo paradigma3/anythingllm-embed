@@ -1,5 +1,6 @@
 import HistoricalMessage from "./HistoricalMessage";
 import PromptReply from "./PromptReply";
+import Suggestions from "./Suggestions";
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, CircleNotch } from "@phosphor-icons/react";
 import { embedderSettings } from "@/main";
@@ -67,27 +68,43 @@ export default function ChatHistory({ settings = {}, history = [] }) {
     >
       {history.map((props, index) => {
         const isLastMessage = index === history.length - 1;
-        const isLastBotReply =
-          index === history.length - 1 && props.role === "assistant";
+        const isLastBotReply = index === history.length - 1 && props.role === "assistant";
+        const isStreamingMessage = props.animate && !props.closed;
+        const isFinalizedMessage = props.role === "assistant" && props.closed;
+        const isAssistantMessage = props.role === "assistant";
 
-        if (isLastBotReply && props.animate) {
+        // Add debugging for the last message
+        if (isLastMessage && isAssistantMessage) {
+          console.log("Last assistant message in history:", {
+            uuid: props.uuid || props.id,
+            content: props.content,
+            suggestions: props.suggestions,
+            closed: props.closed
+          });
+        }
+
+        if (isAssistantMessage && (isStreamingMessage || isFinalizedMessage)) {
           return (
             <PromptReply
-              key={props.uuid}
+              key={props.uuid || props.id}
               ref={isLastMessage ? replyRef : null}
-              uuid={props.uuid}
+              uuid={props.uuid || props.id}
               reply={props.content}
               pending={props.pending}
               sources={props.sources}
               error={props.error}
               closed={props.closed}
+              animate={props.animate}
+              sentAt={props.sentAt}
+              suggestions={props.suggestions || []}
+              widgets={props.widgets || []}
             />
           );
         }
 
         return (
           <HistoricalMessage
-            key={index}
+            key={props.uuid || props.id}
             ref={isLastMessage ? replyRef : null}
             message={props.content}
             sentAt={props.sentAt || Date.now() / 1000}
@@ -97,9 +114,12 @@ export default function ChatHistory({ settings = {}, history = [] }) {
             feedbackScore={props.feedbackScore}
             error={props.error}
             errorMsg={props.errorMsg}
+            suggestions={props.suggestions}
+            widgets={props.widgets}
           />
         );
       })}
+      
       {!isAtBottom && (
         <div className="allm-fixed allm-bottom-[10rem] allm-right-[50px] allm-z-50 allm-cursor-pointer allm-animate-pulse">
           <div className="allm-flex allm-flex-col allm-items-center">

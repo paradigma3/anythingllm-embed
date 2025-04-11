@@ -9,10 +9,34 @@ export default function ChatContainer({
   sessionId,
   settings,
   knownHistory = [],
+  showInput = false
 }) {
   const [message, setMessage] = useState("");
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
+
+  // Add debugging for chat history updates
+  useEffect(() => {
+    console.log("Chat history updated:", chatHistory);
+    if (chatHistory.length > 0) {
+      const lastMessage = chatHistory[chatHistory.length - 1];
+      if (lastMessage.role === "assistant") {
+        console.log("Last assistant message:", {
+          uuid: lastMessage.uuid || lastMessage.id,
+          content: lastMessage.content,
+          suggestions: lastMessage.suggestions,
+          closed: lastMessage.closed
+        });
+        
+        // Check if suggestions are present
+        if (lastMessage.suggestions && lastMessage.suggestions.length > 0) {
+          console.log("Suggestions found in last message:", lastMessage.suggestions);
+        } else {
+          console.log("No suggestions found in last message");
+        }
+      }
+    }
+  }, [chatHistory]);
 
   // Resync history if the ref to known history changes
   // eg: cleared.
@@ -40,6 +64,9 @@ export default function ChatContainer({
         userMessage: message,
         animate: true,
         sentAt: Math.floor(Date.now() / 1000),
+        suggestions: [],
+        widgets: [],
+        closed: false
       },
     ];
     setChatHistory(prevChatHistory);
@@ -62,6 +89,9 @@ export default function ChatContainer({
           userMessage: command,
           attachments,
           animate: true,
+          suggestions: [],
+          widgets: [],
+          closed: false
         },
       ];
     } else {
@@ -78,6 +108,9 @@ export default function ChatContainer({
           pending: true,
           userMessage: command,
           animate: true,
+          suggestions: [],
+          widgets: [],
+          closed: false
         },
       ];
     }
@@ -134,13 +167,15 @@ export default function ChatContainer({
       <div className="allm-flex-grow allm-overflow-y-auto">
         <ChatHistory settings={settings} history={chatHistory} />
       </div>
-      <PromptInput
-        message={message}
-        submit={handleSubmit}
-        onChange={handleMessageChange}
-        inputDisabled={loadingResponse}
-        buttonDisabled={loadingResponse}
-      />
+      {showInput && (
+        <PromptInput
+          message={message}
+          submit={handleSubmit}
+          onChange={handleMessageChange}
+          inputDisabled={loadingResponse}
+          buttonDisabled={loadingResponse}
+        />
+      )}
     </div>
   );
 }
