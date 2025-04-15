@@ -78,7 +78,8 @@ export default {
           '"Segoe UI Emoji"',
           '"Segoe UI Symbol"',
           '"Noto Color Emoji"'
-        ]
+        ],
+        display: ['"Playfair Display"', 'serif'],
       },
       animation: {
         sweep: "sweep 0.5s ease-in-out"

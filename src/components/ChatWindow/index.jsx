@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { House, ChatCircleDots, Question, CircleNotch, MagnifyingGlass, CaretRight, CaretUp, CaretDown } from "@phosphor-icons/react";
 import ChatService from "@/models/chatService";
 import AnythingLLMIcon from "@/assets/anything-llm-icon.svg";
+import Suggestions from "./ChatContainer/ChatHistory/Suggestions";
 
 export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen }) {
   const { chatHistory, setChatHistory, loading } = useChatHistory(
@@ -20,6 +21,34 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
   const [expandedFaqs, setExpandedFaqs] = useState(new Set());
   const [isChattingActive, setIsChattingActive] = useState(false);
   const [hasInitialLoad, setHasInitialLoad] = useState(true);
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
+  const [currentSuggestions, setCurrentSuggestions] = useState([]);
+  
+
+
+
+  // // Update suggestions when chat history changes
+  // useEffect(() => {
+  //   // Get the last message to check its state
+  //   const lastMessage = chatHistory.length > 0 ? chatHistory[chatHistory.length - 1] : null;
+    
+  //   // Only update suggestions if:
+  //   // 1. We have a last message
+  //   // 2. It's from the assistant
+  //   // 3. It's not pending (loading)
+  //   // 4. It has suggestions
+  //   if (lastMessage && 
+  //       lastMessage.role === 'assistant' && 
+  //       !lastMessage.pending && 
+  //       lastMessage.suggestions && 
+  //       lastMessage.suggestions.length > 0) {
+  //     console.log('Updating suggestions from last message:', lastMessage.suggestions);
+  //     setCurrentSuggestions(lastMessage.suggestions);
+  //   } else if (!isLoadingResponse) {
+  //     // Clear suggestions when not loading and no valid suggestions
+  //     setCurrentSuggestions([]);
+  //   }
+  // }, [chatHistory, isLoadingResponse]);
 
   useEffect(() => {
     // Reset initial load flag after a short delay
@@ -54,7 +83,7 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
       }
     }
     fetchFaqs();
-  }, [activeTab, settings]); // Added settings dependency
+  }, [activeTab, settings]);
 
   useEffect(() => {
     async function fetchArticles() {
@@ -66,7 +95,7 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
       }
     }
     fetchArticles();
-  }, [activeTab, settings]); // Added settings dependency
+  }, [activeTab, settings]);
 
   const filteredFaqs = faqs.filter(faq =>
     faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -103,6 +132,8 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
     );
   }
 
+  console.log(isLoadingResponse)
+  console.log("CHATWINDOW::suggestions",currentSuggestions)
   return (
     <div className="allm-flex allm-flex-col allm-h-full allm-bg-white allm-rounded-2xl allm-overflow-hidden">
        {activeTab !== "home" && ( <><ChatWindowHeader
@@ -123,9 +154,11 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
                 settings={settings}
                 knownHistory={chatHistory}
                 showInput={isChattingActive}
+                onLoadingChange={setIsLoadingResponse}
+                onSuggestionsChange={setCurrentSuggestions}
               />
             </div>
-            {!isChattingActive && (
+            {!isChattingActive ? (
               <div 
                 onClick={() => setIsChattingActive(true)}
                 className="allm-fixed allm-bottom-20 allm-left-1/2 -allm-translate-x-1/2 allm-cursor-pointer allm-bg-black allm-text-white allm-px-4 allm-py-2 allm-rounded-full allm-shadow-lg hover:allm-shadow-xl allm-transition-all allm-duration-300 allm-flex allm-items-center allm-gap-2 allm-z-10"
@@ -133,16 +166,16 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
                 Ask a question
                 <ChatCircleDots size={20} />
               </div>
+            ) : currentSuggestions && currentSuggestions.length > 0 && !isLoadingResponse && (
+              <Suggestions suggestions={currentSuggestions} />
             )}
           </div>
         )}
         
         {activeTab === "home" && (
           <div className="allm-flex allm-flex-col allm-flex-grow">
-
-            {/* === Home Header Section with Background & Fading Mask === */}
-            {/* Apply mask: opaque from top down to ~70%, then fades to transparent at the bottom */}
-            <div className="allm-relative allm-p-4 allm-pt-6 allm-pb-8 [mask-image:linear-gradient(to_bottom,black_70%,transparent)]">
+            {/* Header Section with Background */}
+            <div className="allm-relative allm-p-4 allm-h-[35vh] [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
               {/* Background Image Container */}
               <div className="allm-absolute allm-inset-0 allm-z-0">
                 <img
@@ -150,117 +183,121 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
                   alt="Background"
                   className="allm-w-full allm-h-full allm-object-cover"
                 />
-                 {/* Optional: Add back a subtle full overlay IF text contrast is poor *before* masking */}
-                 {/* <div className="allm-absolute allm-inset-0 allm-bg-black/20"></div> */}
               </div>
 
-              {/* Header Content (Logo, Greeting) */}
+              {/* Header Content */}
               <div className="allm-relative allm-z-10">
-                 {/* Logo Area */}
-                 <div className="allm-flex allm-items-center allm-mb-4">
-                 <div className="allm-flex allm-items-center allm-justify-center allm-w-8 allm-h-8 allm-mr-2 allm-rounded-lg allm-p-1">
-                  <img
-                    src={AnythingLLMIcon}
-                    alt={"AnythingLLM Logo"}
-                    // REMOVED filter to show original logo color
-                    className="allm-w-full allm-h-full allm-object-contain"
+                <div className="allm-flex allm-items-center allm-mb-2">
+                  <div className="allm-flex allm-items-center allm-justify-center allm-w-8 allm-h-8 allm-mr-2 allm-rounded-lg allm-p-1">
+                    <img
+                      src={AnythingLLMIcon}
+                      alt={"AnythingLLM Logo"}
+                      className="allm-w-full allm-h-full allm-object-contain"
+                    />
+                  </div>
+                  <span className="allm-text-xs allm-text-white allm-bg-black/20 allm-backdrop-blur-sm allm-p-2 allm-rounded-lg">
+                    Powered by AnythingLLM
+                  </span>
+                </div>
+                <div className="allm-relative allm-z-10 allm-bg-gradient-to-r allm-from-black/30 allm-to-black/20 allm-backdrop-blur-sm allm-p-3 allm-rounded-xl allm-border allm-border-white/10">
+                  <div className="allm-space-y-0.5">
+                    <h2 className="allm-text-2xl sm:allm-text-3xl allm-font-display allm-font-semibold allm-tracking-wide allm-text-white allm-drop-shadow-lg">
+                      Mabuhay!
+                    </h2>
+                    <h1 className="allm-text-2xl sm:allm-text-3xl allm-font-display allm-font-bold allm-leading-tight allm-bg-gradient-to-r allm-from-purple-200 allm-via-pink-200 allm-to-indigo-200 allm-bg-clip-text allm-text-transparent allm-drop-shadow-xl">
+                      How can we help you today?
+                    </h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="allm-relative allm-bg-white allm-flex-grow -allm-mt-8 allm-rounded-t-[2rem] allm-px-4 allm-pt-4 allm-pb-4">
+              {/* Action Buttons/Widgets */}
+              <div className="allm-space-y-3">
+                {/* Ask a question Button */}
+                <div
+                  onClick={() => {
+                    setActiveTab("messages");
+                    setIsChattingActive(true);
+                  }}
+                  className="allm-relative allm-w-full allm-cursor-pointer"
+                >
+                  <div className="allm-w-full allm-px-4 allm-py-3 allm-pl-12 allm-rounded-xl allm-bg-gray-50 allm-border allm-border-gray-100 hover:allm-bg-gray-100 allm-transition-all allm-duration-300 allm-shadow-sm hover:allm-shadow-md allm-flex allm-items-center allm-justify-between">
+                    <span className="allm-text-gray-500">Ask a question</span>
+                  </div>
+                  <ChatCircleDots
+                    size={20}
+                    className="allm-absolute allm-left-4 allm-top-1/2 -allm-translate-y-1/2 allm-text-gray-400 allm-pointer-events-none"
                   />
                 </div>
-                 {/* CHANGED text color from white/80 to gray-700 */}
-                <span className="allm-text-xs allm-text-gray-700 ">Powered by AnythingLLM</span>
+
+                {/* Divider */}
+                <div className="allm-flex allm-items-center allm-gap-3 allm-px-6 allm-py-2">
+                  <div className="allm-flex-1 allm-h-[1px] allm-bg-gray-200"></div>
+                  <span className="allm-text-sm allm-text-gray-400 allm-font-medium">or</span>
+                  <div className="allm-flex-1 allm-h-[1px] allm-bg-gray-200"></div>
+                </div>
+
+                {/* FAQ Search Widget */}
+                <div
+                  onClick={() => setActiveTab('help')}
+                  className="allm-relative allm-w-full allm-cursor-pointer"
+                >
+                  <div className="allm-w-full allm-px-4 allm-py-3 allm-pl-12 allm-rounded-xl allm-bg-gray-50 allm-border allm-border-gray-100 hover:allm-bg-gray-100 allm-transition-all allm-duration-300 allm-shadow-sm hover:allm-shadow-md allm-flex allm-items-center">
+                    <span className="allm-text-gray-500">Search for FAQs</span>
+                  </div>
+                  <MagnifyingGlass
+                    size={20}
+                    className="allm-absolute allm-left-4 allm-top-1/2 -allm-translate-y-1/2 allm-text-gray-400 allm-pointer-events-none"
+                  />
+                </div>
               </div>
-                 {/* Greeting Text */}
-                 <h2 className="allm-text-2xl allm-font-medium allm-text-white">Mabuhay!</h2>
-                 <h1 className="allm-text-3xl allm-font-bold allm-text-white">How can we help you today?</h1><br></br>
-              </div>
-            </div>
-            {/* === End Home Header Section === */}
-
-
-            {/* === Home Content Section (White Background) === */}
-            {/* Negative margin pulls this section up slightly to blend with the fade */}
-            <div className="allm-p-4 allm-bg-white allm-flex-grow -allm-mt-6"> {/* Adjust negative margin (-mt-4, -mt-6, -mt-8) as needed */}
-              {/* Action Buttons/Widgets */}
-               <div className="allm-mb-6 allm-space-y-3 allm-z-1000">
-                 {/* Ask a question Button */}
-                 <button
-                    onClick={() => {
-                        setActiveTab("messages");
-                        setIsChattingActive(true);
-                    }}
-                    className="allm-w-full allm-flex allm-items-center allm-justify-between allm-bg-white allm-text-gray-800 allm-px-4 allm-py-3 allm-rounded-xl allm-border allm-border-gray-200 hover:allm-bg-gray-50 allm-transition-all allm-shadow-sm hover:allm-shadow-md"
-                 >
-                    <span className="allm-font-medium">Ask a question</span>
-                    <span className="allm-flex allm-items-center allm-gap-1">
-                        <ChatCircleDots size={20} className="allm-text-gray-600" />
-                        <CaretRight size={16} className="allm-text-gray-500" />
-                    </span>
-                 </button>
-
-                 {/* Divider */}
-                 <div className="allm-flex allm-items-center allm-gap-3 allm-px-6 allm-py-1">
-                   <div className="allm-flex-1 allm-h-[1px] allm-bg-gray-200"></div>
-                   <span className="allm-text-sm allm-text-gray-400 allm-font-medium">or</span>
-                   <div className="allm-flex-1 allm-h-[1px] allm-bg-gray-200"></div>
-                 </div>
-
-                 {/* FAQ Search Widget */}
-                 <div
-                     onClick={() => setActiveTab('help')}
-                     className="allm-relative allm-w-full allm-cursor-pointer"
-                 >
-                     <div className="allm-w-full allm-px-4 allm-py-3 allm-pl-12 allm-rounded-xl allm-bg-gray-50 allm-border allm-border-gray-100 hover:allm-bg-gray-100 allm-transition-all allm-shadow-sm hover:allm-shadow-md allm-flex allm-items-center">
-                         <span className="allm-text-gray-500">Search for help</span>
-                     </div>
-                     <MagnifyingGlass
-                         size={20}
-                         className="allm-absolute allm-left-4 allm-top-1/2 -allm-translate-y-1/2 allm-text-gray-400 allm-pointer-events-none"
-                     />
-                 </div>
-               </div>
 
               {/* Articles Section */}
-               <h3 className="allm-text-sm allm-font-medium allm-text-gray-500 allm-mb-3 allm-uppercase">Articles</h3>
-               {/* ... rest of articles loading/display ... */}
-               {loadingArticles ? (
-                 <div className="allm-flex allm-items-center allm-justify-center allm-py-8">
-                   <CircleNotch size={24} className="allm-text-gray-400 allm-animate-spin" />
-                 </div>
-               ) : articles.length > 0 ? (
-                 <div className="allm-space-y-3">
-                   {articles.map((article, index) => (
-                     <a
-                       key={index}
-                       href={article.url}
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       className="allm-block allm-bg-white allm-rounded-lg allm-overflow-hidden allm-border allm-border-gray-200 hover:allm-shadow-md allm-transition-shadow allm-no-underline"
-                     >
-                       {article.image_url && (
-                         <img
-                           src={article.image_url}
-                           alt={article.title}
-                           className="allm-w-full allm-h-36 allm-object-cover"
-                         />
-                       )}
-                       <div className="allm-p-3">
-                         <h3 className="allm-text-sm allm-font-semibold allm-mb-1 allm-text-gray-900">
-                           {article.title}
-                         </h3>
-                         <p className="allm-text-xs allm-text-gray-600 allm-line-clamp-2">
-                           {article.description}
-                         </p>
-                       </div>
-                     </a>
-                   ))}
-                 </div>
-               ) : (
-                 <p className="allm-text-slate-600 allm-text-sm allm-font-sans allm-py-4 allm-text-center">
-                   No articles available at the moment.
-                 </p>
-               )}
+              <div className="allm-mt-8">
+                <h3 className="allm-text-sm allm-font-medium allm-text-gray-500 allm-mb-3 allm-uppercase">Articles</h3>
+                {/* ... rest of articles loading/display ... */}
+                {loadingArticles ? (
+                  <div className="allm-flex allm-items-center allm-justify-center allm-py-8">
+                    <CircleNotch size={24} className="allm-text-gray-400 allm-animate-spin" />
+                  </div>
+                ) : articles.length > 0 ? (
+                  <div className="allm-space-y-3">
+                    {articles.map((article, index) => (
+                      <a
+                        key={index}
+                        href={article.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="allm-block allm-bg-white allm-rounded-lg allm-overflow-hidden allm-border allm-border-gray-200 allm-shadow-md allm-transition-shadow allm-no-underline"
+                      >
+                        {article.image_url && (
+                          <img
+                            src={article.image_url}
+                            alt={article.title}
+                            className="allm-w-full allm-h-36 allm-object-cover"
+                          />
+                        )}
+                        <div className="allm-p-3">
+                          <h3 className="allm-text-sm allm-font-semibold allm-mb-1 allm-text-gray-900">
+                            {article.title}
+                          </h3>
+                          <p className="allm-text-xs allm-text-gray-600 allm-line-clamp-2">
+                            {article.description}
+                          </p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="allm-text-slate-600 allm-text-sm allm-font-sans allm-py-4 allm-text-center">
+                    No articles available at the moment.
+                  </p>
+                )}
+              </div>
             </div>
-             {/* === End Home Content Section ==== */}
           </div>
         )}
 
@@ -293,37 +330,52 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
                     className="allm-bg-white allm-rounded-lg allm-p-4 allm-shadow-md hover:allm-shadow-lg allm-transition-shadow allm-border allm-border-gray-100 allm-relative"
                   >
                     <h3 className="allm-text-[15px] allm-font-medium allm-mb-2 allm-text-gray-900">{faq.question}</h3>
-                    <div 
-                      className={`allm-relative allm-transition-all allm-duration-500 allm-ease-in-out allm-overflow-hidden ${
-                        expandedFaqs.has(index) ? 'allm-max-h-[1000px]' : 'allm-max-h-20'
-                      }`}
-                    >
-                      <p className="allm-text-[14px] allm-text-gray-700 allm-leading-relaxed">
-                        {faq.answer}
-                      </p>
-                      {!expandedFaqs.has(index) && (
-                        <div className="allm-absolute allm-inset-x-0 allm-bottom-0 allm-h-12 allm-bg-gradient-to-t allm-from-white allm-pointer-events-none allm-transition-opacity allm-duration-500" />
+                    <div className="allm-relative">
+                      <div 
+                        className={`
+                          allm-text-[14px] allm-text-gray-700 allm-leading-relaxed
+                          allm-transition-all allm-duration-500 allm-ease-in-out
+                          ${!expandedFaqs.has(index) ? 'allm-max-h-20 allm-overflow-hidden' : 'allm-max-h-[1000px]'}
+                        `}
+                      >
+                        <p>{faq.answer}</p>
+                      </div>
+                      
+                      {/* Gradient Overlay */}
+                      <div 
+                        className={`
+                          allm-absolute allm-inset-x-0 allm-bottom-0 
+                          allm-h-12 allm-bg-gradient-to-t allm-from-white 
+                          allm-pointer-events-none
+                          allm-transition-opacity allm-duration-500
+                          ${expandedFaqs.has(index) || faq.answer.length < 120 ? 'allm-opacity-0' : 'allm-opacity-100'}
+                        `}
+                      />
+
+                      {/* Expand/Collapse Button */}
+                      {faq.answer.length >= 120 && (
+                        <button
+                          onClick={() => toggleFaqExpansion(index)}
+                          className={`
+                            allm-absolute allm-bottom-3 allm-right-3 
+                            allm-p-1.5 allm-rounded-full 
+                            allm-bg-gray-50 hover:allm-bg-gray-100 
+                            allm-transition-all allm-duration-500 
+                            allm-border allm-border-gray-100/50 
+                            allm-flex allm-items-center allm-justify-center 
+                            group allm-shadow-sm hover:allm-shadow
+                            ${expandedFaqs.has(index) ? 'allm-rotate-180' : 'allm-rotate-0'}
+                          `}
+                          aria-label={expandedFaqs.has(index) ? "Show less" : "Show more"}
+                        >
+                          <CaretDown
+                            size={16}
+                            weight="bold"
+                            className="allm-text-gray-400 group-hover:allm-text-gray-600 allm-transition-all allm-duration-500"
+                          />
+                        </button>
                       )}
                     </div>
-                    <button
-                      onClick={() => toggleFaqExpansion(index)}
-                      className="allm-absolute allm-bottom-3 allm-right-3 allm-p-1.5 allm-rounded-full allm-bg-gray-50 hover:allm-bg-gray-100 allm-transition-all allm-duration-500 allm-border allm-border-gray-100/50 allm-flex allm-items-center allm-justify-center group allm-shadow-sm hover:allm-shadow"
-                      aria-label={expandedFaqs.has(index) ? "Show less" : "Show more"}
-                    >
-                      {expandedFaqs.has(index) ? (
-                        <CaretUp 
-                          size={16} 
-                          weight="bold" 
-                          className="allm-text-gray-400 group-hover:allm-text-gray-600 allm-transition-all allm-duration-500 allm-transform" 
-                        />
-                      ) : (
-                        <CaretDown 
-                          size={16} 
-                          weight="bold"
-                          className="allm-text-gray-400 group-hover:allm-text-gray-600 allm-transition-all allm-duration-500 allm-transform" 
-                        />
-                      )}
-                    </button>
                   </div>
                 ))}
               </div>
@@ -376,7 +428,7 @@ function NavigationBar({ activeTab, setActiveTab }) {
           }`}
         >
           <Question weight={activeTab === "help" ? "fill" : "regular"} size={24} />
-          <span className="allm-text-[11px] allm-mt-1.5">Help</span>
+          <span className="allm-text-[11px] allm-mt-1.5">FAQs</span>
         </button>
       </div>
     </>

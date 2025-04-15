@@ -1,4 +1,32 @@
 // For handling of synchronous chats that are not utilizing streaming or chat requests.
+export function updateAssistantMetadata(chatHistory, { suggestions = [], widgets = [] }) {
+  // Only proceed if we have a chat history
+  if (!chatHistory || chatHistory.length === 0) return chatHistory;
+
+  // Find the last assistant message
+  const lastMessageIndex = chatHistory.length - 1;
+  const lastMessage = chatHistory[lastMessageIndex];
+
+  // Only update if it's an assistant message
+  if (lastMessage.role !== "assistant") return chatHistory;
+
+  // Create new message with updated metadata
+  const updatedMessage = {
+    ...lastMessage,
+    suggestions: suggestions || [],
+    widgets: widgets || [],
+    closed: true,
+    animate: false,
+    pending: false
+  };
+
+  // Create new history array with updated message
+  const newHistory = [...chatHistory];
+  newHistory[lastMessageIndex] = updatedMessage;
+  console.log("Updated history:", newHistory);
+  return newHistory;
+}
+
 export default function handleChat(
   chatResult,
   setLoadingResponse,
@@ -22,7 +50,7 @@ export default function handleChat(
   const lastMessage = _chatHistory[_chatHistory.length - 1];
   const sentAt = lastMessage?.sentAt;
 
-  console.log("Handling chat result:", chatResult);
+  // console.log("Handling chat result:", chatResult);
 
   if (type === "abort") {
     setLoadingResponse(false);
@@ -37,28 +65,10 @@ export default function handleChat(
       animate: false,
       pending: false,
       sentAt,
-      suggestions,
-      widgets,
+      suggestions: [],
+      widgets: [],
     };
-    console.log("Abort message:", message);
-    setChatHistory([...remHistory, message]);
-    _chatHistory.push(message);
-  } else if (type === "textResponse") {
-    setLoadingResponse(false);
-    const message = {
-      uuid,
-      content: textResponse,
-      role: "assistant",
-      sources,
-      closed: close,
-      error,
-      errorMsg,
-      animate: !close,
-      pending: false,
-      sentAt,
-      suggestions,
-      widgets,
-    };
+    // console.log("Abort message:", message);
     setChatHistory([...remHistory, message]);
     _chatHistory.push(message);
   } else if (type === "textResponseChunk") {
@@ -73,11 +83,10 @@ export default function handleChat(
         errorMsg,
         closed: close,
         animate: !close,
-        pending: false,
+        pending: true,
         sentAt,
-        // Update suggestions and widgets during streaming if they exist
-        suggestions: suggestions?.length ? suggestions : existingHistory.suggestions || [],
-        widgets: widgets?.length ? widgets : existingHistory.widgets || []
+        suggestions: existingHistory.suggestions || [],
+        widgets: existingHistory.widgets || []
       };
       
       _chatHistory[chatIdx] = updatedHistory;
@@ -91,85 +100,36 @@ export default function handleChat(
         role: "assistant",
         closed: close,
         animate: !close,
-        pending: false,
+        pending: true,
         sentAt,
-        // Initialize with suggestions and widgets if they exist
-        suggestions: suggestions || [],
-        widgets: widgets || []
+        suggestions: [],
+        widgets: []
       };
       
       _chatHistory.push(newMessage);
     }
     setChatHistory([..._chatHistory]);
   } else if (type === "finalizeResponseStream") {
-    console.log("Processing finalizeResponseStream with suggestions:", suggestions);
+    // console.log("Processing finalizeResponseStream with suggestions:", suggestions);
+    // console.log("Processing finalizeResponseStream with widgets:", widgets);
     
-    // Create a completely new array to ensure React detects the change
-    const newChatHistory = [..._chatHistory];
+    // Use updateAssistantMetadata to handle the update
+    const updatedHistory = updateAssistantMetadata(_chatHistory, {
+      suggestions,
+      widgets
+    });
     
-    // Try to find the message by uuid or id
-    const chatIdx = newChatHistory.findIndex((chat) => 
-      chat.uuid === uuid || chat.uuid === chatResult.id || chat.id === uuid || chat.id === chatResult.id
-    );
+    // Update both state and reference
+    setChatHistory(updatedHistory);
+    _chatHistory.length = 0;
+    _chatHistory.push(...updatedHistory);
     
-    if (chatIdx !== -1) {
-      console.log("Found message at index:", chatIdx);
-      
-      // Create a completely new message object
-      const updatedMessage = {
-        ...newChatHistory[chatIdx],
-        closed: true,
-        animate: false,
-        suggestions: suggestions || [],
-        widgets: widgets || [],
-        metrics: chatResult.metrics || null
-      };
-      
-      // Replace the message in the new array
-      newChatHistory[chatIdx] = updatedMessage;
-      
-      // Update the state with the new array
-      setChatHistory(newChatHistory);
-      
-      // Also update the _chatHistory reference for future operations
-      _chatHistory.length = 0;
-      _chatHistory.push(...newChatHistory);
-      
-      console.log("Updated chat history with suggestions:", updatedMessage.suggestions);
-    } else {
-      console.log("Message not found in history, adding as new message");
-      // If the message doesn't exist, add it as a new message
-      const newMessage = {
-        uuid: uuid || chatResult.id,
-        content: textResponse || "",
-        role: "assistant",
-        sources: sources || [],
-        closed: true,
-        error: error || false,
-        errorMsg: errorMsg || null,
-        animate: false,
-        pending: false,
-        sentAt: sentAt || Math.floor(Date.now() / 1000),
-        suggestions: suggestions || [],
-        widgets: widgets || []
-      };
-      
-      // Add the new message to the new array
-      newChatHistory.push(newMessage);
-      
-      // Update the state with the new array
-      setChatHistory(newChatHistory);
-      
-      // Also update the _chatHistory reference
-      _chatHistory.length = 0;
-      _chatHistory.push(...newChatHistory);
-      
-      console.log("Added new message with suggestions:", newMessage.suggestions);
-    }
+    // console.log("Updated chat history with suggestions:", suggestions);
+    // console.log("Updated chat history with widgets:", widgets);
   }
 
   // Log the final chat history for debugging
-  console.log("Final chat history:", _chatHistory);
+  // console.log("Final chat history:", _chatHistory);
 }
 
 export function chatPrompt(workspace) {

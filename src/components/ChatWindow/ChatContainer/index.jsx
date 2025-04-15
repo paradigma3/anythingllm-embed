@@ -9,37 +9,34 @@ export default function ChatContainer({
   sessionId,
   settings,
   knownHistory = [],
-  showInput = false
+  showInput = false,
+  onLoadingChange,
+  onSuggestionsChange
 }) {
   const [message, setMessage] = useState("");
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
-
-  // Add debugging for chat history updates
+  const [suggestions, setSuggestions] = useState([]);
+  
+  // Notify parent of loading state changes
   useEffect(() => {
-    console.log("Chat history updated:", chatHistory);
-    if (chatHistory.length > 0) {
+    onLoadingChange?.(loadingResponse);
+    
+    // If we're not loading and have a last message, check if it has suggestions
+    if (!loadingResponse && chatHistory.length > 0) {
       const lastMessage = chatHistory[chatHistory.length - 1];
-      if (lastMessage.role === "assistant") {
-        console.log("Last assistant message:", {
-          uuid: lastMessage.uuid || lastMessage.id,
-          content: lastMessage.content,
-          suggestions: lastMessage.suggestions,
-          closed: lastMessage.closed
-        });
-        
-        // Check if suggestions are present
-        if (lastMessage.suggestions && lastMessage.suggestions.length > 0) {
-          console.log("Suggestions found in last message:", lastMessage.suggestions);
-        } else {
-          console.log("No suggestions found in last message");
-        }
+      if (lastMessage.role === 'assistant' && lastMessage.suggestions && lastMessage.suggestions.length > 0) {
+        setSuggestions(lastMessage.suggestions);
+        onSuggestionsChange?.(lastMessage.suggestions);
+        console.log('ChatContainer detected suggestions in last message:', lastMessage.suggestions);
+      } else if (lastMessage.role === 'assistant') {
+        setSuggestions([]); // If no suggestions, set to empty array
+        onSuggestionsChange?.([]);
       }
     }
-  }, [chatHistory]);
+  }, [loadingResponse, onLoadingChange, chatHistory, onSuggestionsChange]);
 
-  // Resync history if the ref to known history changes
-  // eg: cleared.
+  
   useEffect(() => {
     if (knownHistory.length !== chatHistory.length)
       setChatHistory([...knownHistory]);
@@ -165,7 +162,7 @@ export default function ChatContainer({
   return (
     <div className="allm-h-full allm-w-full allm-flex allm-flex-col">
       <div className="allm-flex-grow allm-overflow-y-auto">
-        <ChatHistory settings={settings} history={chatHistory} />
+        <ChatHistory settings={settings} history={chatHistory} suggestions={suggestions} />
       </div>
       {showInput && (
         <PromptInput
