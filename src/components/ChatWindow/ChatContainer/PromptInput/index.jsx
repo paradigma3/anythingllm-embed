@@ -46,16 +46,16 @@ export default function PromptInput({
   };
 
   return (
-    <div className="allm-w-full allm-sticky allm-bottom-0 allm-z-10 allm-flex allm-justify-center allm-items-center allm-bg-white allm-pb-4">
+    <div className="allm-w-full allm-flex allm-justify-center allm-items-center allm-bg-white allm-py-2 allm-rounded-b-2xl">
       <form
         onSubmit={handleSubmit}
-        className="allm-flex allm-flex-col allm-gap-y-1 allm-rounded-t-lg allm-w-full allm-items-center allm-justify-center"
+        className="allm-w-full allm-px-4"
       >
         <div className="allm-flex allm-items-center allm-w-full">
-          <div className="allm-bg-white allm-flex allm-flex-col allm-px-4 allm-overflow-hidden allm-w-full">
+          <div className="allm-flex allm-flex-col allm-overflow-hidden allm-w-full">
             <div
               style={{ border: "1.5px solid #22262833" }}
-              className="allm-flex allm-items-center allm-w-full allm-rounded-2xl"
+              className="allm-flex allm-items-center allm-w-full allm-rounded-2xl allm-bg-white"
             >
               <textarea
                 ref={textareaRef}
@@ -78,7 +78,7 @@ export default function PromptInput({
                 ref={formRef}
                 type="submit"
                 disabled={buttonDisabled}
-                className="allm-bg-transparent allm-border-none allm-inline-flex allm-justify-center allm-rounded-2xl allm-cursor-pointer allm-text-black group"
+                className="allm-bg-transparent allm-border-none allm-inline-flex allm-justify-center allm-rounded-2xl allm-cursor-pointer allm-text-black group allm-px-3"
                 id="send-message-button"
                 aria-label="Send message"
               >

@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ChatHistory from "./ChatHistory";
 import PromptInput from "./PromptInput";
 import handleChat from "@/utils/chat";
 import ChatService from "@/models/chatService";
+import { ArrowDown } from "@phosphor-icons/react";
+import debounce from "lodash.debounce";
+
 export const SEND_TEXT_EVENT = "anythingllm-embed-send-prompt";
 
 export default function ChatContainer({
@@ -11,12 +14,15 @@ export default function ChatContainer({
   knownHistory = [],
   showInput = false,
   onLoadingChange,
-  onSuggestionsChange
+  onSuggestionsChange,
+  onHistoryChange
 }) {
   const [message, setMessage] = useState("");
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
   const [suggestions, setSuggestions] = useState([]);
+  const containerRef = useRef(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   
   // Notify parent of loading state changes
   useEffect(() => {
@@ -28,19 +34,30 @@ export default function ChatContainer({
       if (lastMessage.role === 'assistant' && lastMessage.suggestions && lastMessage.suggestions.length > 0) {
         setSuggestions(lastMessage.suggestions);
         onSuggestionsChange?.(lastMessage.suggestions);
-        console.log('ChatContainer detected suggestions in last message:', lastMessage.suggestions);
       } else if (lastMessage.role === 'assistant') {
-        setSuggestions([]); // If no suggestions, set to empty array
+        setSuggestions([]); 
         onSuggestionsChange?.([]);
       }
     }
   }, [loadingResponse, onLoadingChange, chatHistory, onSuggestionsChange]);
 
-  
+  // Notify parent when chat history changes
   useEffect(() => {
-    if (knownHistory.length !== chatHistory.length)
+    onHistoryChange?.(chatHistory);
+  }, [chatHistory, onHistoryChange]);
+
+  useEffect(() => {
+    // Initialize with knownHistory if we have it
+    if (knownHistory.length > 0) {
       setChatHistory([...knownHistory]);
-  }, [knownHistory]);
+    }
+  }, []); // Run only on mount
+
+  useEffect(() => {
+    if (knownHistory.length > chatHistory.length) {
+      setChatHistory([...knownHistory]);
+    }
+  }, [knownHistory, chatHistory]);
 
   const handleMessageChange = (event) => {
     setMessage(event.target.value);
@@ -70,13 +87,12 @@ export default function ChatContainer({
     setMessage("");
     setLoadingResponse(true);
   };
-
+  console.log("This is the chat history",chatHistory);
   const sendCommand = (command, history = [], attachments = []) => {
     if (!command || command === "") return false;
 
     let prevChatHistory;
     if (history.length > 0) {
-      // use pre-determined history chain.
       prevChatHistory = [
         ...history,
         {
@@ -159,19 +175,71 @@ export default function ChatContainer({
     };
   }, []);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
+
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const diff =
+      containerRef.current.scrollHeight -
+      containerRef.current.scrollTop -
+      containerRef.current.clientHeight;
+    const isBottom = diff <= 40;
+    setIsAtBottom(isBottom);
+  };
+
+  const debouncedScroll = debounce(handleScroll, 100);
+  useEffect(() => {
+    function watchScrollEvent() {
+      if (!containerRef.current) return null;
+      const containerElement = containerRef.current;
+      if (!containerElement) return null;
+      containerElement.addEventListener("scroll", debouncedScroll);
+      return () => containerElement.removeEventListener("scroll", debouncedScroll);
+    }
+    watchScrollEvent();
+  }, []);
+
+  const scrollToBottom = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  };
+
   return (
-    <div className="allm-h-full allm-w-full allm-flex allm-flex-col">
-      <div className="allm-flex-grow allm-overflow-y-auto">
-        <ChatHistory settings={settings} history={chatHistory} suggestions={suggestions} />
+    <div className="allm-h-full allm-w-full allm-flex allm-flex-col allm-rounded-2xl allm-overflow-hidden">
+      <div ref={containerRef} className="allm-flex-grow allm-overflow-y-auto allm-pb-[80px] allm-no-scrollbar">
+        <ChatHistory settings={settings} history={chatHistory} />
+        {!isAtBottom && (
+          <div className="allm-fixed allm-bottom-[10rem] allm-right-[50px] allm-z-50 allm-cursor-pointer allm-animate-pulse">
+            <div className="allm-flex allm-flex-col allm-items-center">
+              <div className="allm-p-1 allm-rounded-full allm-border allm-border-white/10 allm-bg-black/20 hover:allm-bg-black/50">
+                <ArrowDown
+                  weight="bold"
+                  className="allm-text-white/50 allm-w-5 allm-h-5"
+                  onClick={scrollToBottom}
+                  id="scroll-to-bottom-button"
+                  aria-label="Scroll to bottom"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       {showInput && (
-        <PromptInput
-          message={message}
-          submit={handleSubmit}
-          onChange={handleMessageChange}
-          inputDisabled={loadingResponse}
-          buttonDisabled={loadingResponse}
-        />
+        <div className="allm-fixed allm-bottom-0 allm-left-0 allm-right-0 allm-z-10 allm-bg-white allm-border-t allm-border-gray-100 allm-rounded-b-2xl">
+          <PromptInput
+            message={message}
+            submit={handleSubmit}
+            onChange={handleMessageChange}
+            inputDisabled={loadingResponse}
+            buttonDisabled={loadingResponse}
+          />
+        </div>
       )}
     </div>
   );

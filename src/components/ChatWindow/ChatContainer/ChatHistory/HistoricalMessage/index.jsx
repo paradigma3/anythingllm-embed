@@ -31,10 +31,10 @@ const HistoricalMessage = forwardRef(
     if (error) console.error(`ANYTHING_LLM_CHAT_WIDGET_ERROR: ${error}`);
 
     return (
-      <div className="py-[5px]">
+      <div className="allm-mb-4 allm-w-full">
         {role === "assistant" && (
           <div
-            className={`allm-text-[10px] allm-text-gray-400 allm-ml-[54px] allm-mr-6 allm-mb-2 allm-text-left allm-font-sans`}
+            className="allm-text-[10px] allm-text-gray-400 allm-ml-12 allm-mb-1 allm-text-left allm-font-sans"
           >
             {embedderSettings.settings.assistantName ||
               "Anything LLM Chat Assistant"}
@@ -43,7 +43,7 @@ const HistoricalMessage = forwardRef(
         <div
           key={uuid}
           ref={ref}
-          className={`allm-flex allm-items-start allm-w-full allm-h-fit ${
+          className={`allm-flex allm-items-start allm-w-full ${
             role === "user" ? "allm-justify-end" : "allm-justify-start"
           }`}
         >
@@ -51,7 +51,7 @@ const HistoricalMessage = forwardRef(
             <img
               src={embedderSettings.settings.assistantIcon || AnythingLLMIcon}
               alt="Anything LLM Icon"
-              className="allm-w-9 allm-h-9 allm-flex-shrink-0 allm-ml-2 allm-mt-2"
+              className="allm-w-9 allm-h-9 allm-flex-shrink-0 allm-ml-2"
               id="anything-llm-icon"
             />
           )}
@@ -63,18 +63,18 @@ const HistoricalMessage = forwardRef(
                   ? embedderSettings.USER_STYLES.msgBg
                   : embedderSettings.ASSISTANT_STYLES.msgBg,
             }}
-            className={`allm-py-[11px] allm-px-4 allm-flex allm-flex-col allm-font-sans ${
+            className={`allm-p-3 allm-flex allm-flex-col allm-font-sans allm-min-h-fit ${
               error
-                ? "allm-bg-red-200 allm-rounded-lg allm-mr-[37px] allm-ml-[9px]"
+                ? "allm-bg-red-200 allm-rounded-lg allm-mx-4"
                 : role === "user"
                   ? `${embedderSettings.USER_STYLES.base} allm-anything-llm-user-message`
-                  : `${embedderSettings.ASSISTANT_STYLES.base} allm-anything-llm-assistant-message`
-            } allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)]`}
+                  : `${embedderSettings.ASSISTANT_STYLES.base} allm-shadow-[0_4px_14px_rgba(0,0,0,0.25)]`
+            }`}
           >
-            <div className="allm-flex">
+            <div className="allm-flex allm-flex-col allm-w-full">
               {error ? (
                 <div className="allm-p-2 allm-rounded-lg allm-bg-red-50 allm-text-red-500">
-                  <span className={`allm-inline-block `}>
+                  <span className="allm-inline-block">
                     <Warning className="allm-h-4 allm-w-4 allm-mb-1 allm-inline-block" />{" "}
                     Could not respond to message.
                   </span>
@@ -84,7 +84,7 @@ const HistoricalMessage = forwardRef(
                 </div>
               ) : (
                 <span
-                  className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-gap-y-1 ${textSize} allm-leading-[20px]`}
+                  className={`allm-whitespace-pre-line allm-flex allm-flex-col allm-w-full ${textSize} allm-leading-[20px]`}
                   dangerouslySetInnerHTML={{
                     __html: DOMPurify.sanitize(renderMarkdown(message)),
                   }}
@@ -96,7 +96,9 @@ const HistoricalMessage = forwardRef(
 
         {sentAt && (
           <div
-            className={`allm-font-sans allm-text-[10px] allm-text-gray-400 allm-ml-[54px] allm-mr-6 allm-mt-2 ${role === "user" ? "allm-text-right" : "allm-text-left"}`}
+            className={`allm-font-sans allm-text-[10px] allm-text-gray-400 allm-ml-12 allm-mt-1 ${
+              role === "user" ? "allm-text-right" : "allm-text-left"
+            }`}
           >
             {formatDate(sentAt)}
           </div>

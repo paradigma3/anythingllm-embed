@@ -148,7 +148,7 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
       <div className="allm-flex-grow allm-overflow-y-auto">
         {activeTab === "messages" && (
           <div className="allm-flex allm-flex-col allm-h-full">
-            <div className={`allm-flex-grow allm-overflow-y-auto ${!isChattingActive ? 'allm-filter allm-blur-[2px] allm-pointer-events-none' : ''}`}>
+            <div className={`${!isChattingActive ? 'allm-filter allm-blur-[2px] allm-pointer-events-none' : ''}`}>
               <ChatContainer
                 sessionId={sessionId}
                 settings={settings}
@@ -156,6 +156,7 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
                 showInput={isChattingActive}
                 onLoadingChange={setIsLoadingResponse}
                 onSuggestionsChange={setCurrentSuggestions}
+                onHistoryChange={setChatHistory}
               />
             </div>
             {!isChattingActive ? (
