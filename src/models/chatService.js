@@ -2,9 +2,25 @@ import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { v4 } from "uuid";
 
 const ChatService = {
+  // Helper function to determine which URL to use
+  getApiUrl: function(embedSettings) {
+    const { baseApiUrl, devUrl, mainAttr } = embedSettings;
+    
+    // mainAttr comes as a string from data attributes, so we need to compare with "true"
+    if (mainAttr === "true") {
+      return baseApiUrl;
+    }
+    
+    // Otherwise, use devUrl for localhost or baseApiUrl for other environments
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    return isDevelopment ? (devUrl || 'http://localhost:3001/api/embed') : baseApiUrl;
+  },
+
   embedSessionHistory: async function (embedSettings, sessionId) {
-    const { embedId, baseApiUrl } = embedSettings;
-    return await fetch(`${baseApiUrl}/${embedId}/${sessionId}`)
+    const { embedId } = embedSettings;
+    return await fetch(
+      `${embedSettings.baseApiUrl}/${embedId}/${sessionId}`
+    )
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error("Invalid response from server");
@@ -24,9 +40,9 @@ const ChatService = {
       });
   },
 
-  getEmbedConfig: async function(embedId) {
+  getEmbedConfig: async function(embedId, embedSettings) {
     try {
-      const response = await fetch(`http://localhost:3000/api/embed-config/${embedId}`);
+      const response = await fetch(`${embedSettings.baseApiUrl}/${embedId}/${embedSettings.sessionId}/config`);
       if (!response.ok) throw new Error("Failed to fetch embed config");
       const config = await response.json();
       return config;
@@ -40,14 +56,14 @@ const ChatService = {
     const { embedId } = embedSettings;
     try {
       // First get the embed config to get the numeric ID
-      const config = await this.getEmbedConfig(embedId);
+      const config = await this.getEmbedConfig(embedId, embedSettings);
       if (!config || !config.id) {
         console.error("Could not get embed config ID");
         return [];
       }
 
       // Now fetch FAQs using the numeric ID
-      const response = await fetch(`http://localhost:3001/api/embed-faqs/${config.id}/faqs`);
+      const response = await fetch(`${embedSettings.baseApiUrl}/${embedId}/${embedSettings.sessionId}/${config.id}/faqs`);
       if (!response.ok) throw new Error("Failed to fetch FAQs");
       
       const data = await response.json();
@@ -62,14 +78,14 @@ const ChatService = {
     const { embedId } = embedSettings;
     try {
       // First get the embed config to get the numeric ID
-      const config = await this.getEmbedConfig(embedId);
+      const config = await this.getEmbedConfig(embedId, embedSettings);
       if (!config || !config.id) {
         console.error("Could not get embed config ID");
         return [];
       }
 
       // Now fetch Articles using the numeric ID
-      const response = await fetch(`http://localhost:3000/api/embed-faqs/${config.id}/articles`);
+      const response = await fetch(`${embedSettings.baseApiUrl}/${embedId}/${embedSettings.sessionId}/${config.id}/articles`);
       if (!response.ok) throw new Error("Failed to fetch Articles");
       
       const data = await response.json();
@@ -81,15 +97,19 @@ const ChatService = {
   },
 
   resetEmbedChatSession: async function (embedSettings, sessionId) {
-    const { baseApiUrl, embedId } = embedSettings;
-    return await fetch(`${baseApiUrl}/${embedId}/${sessionId}`, {
-      method: "DELETE",
-    })
+    const { embedId } = embedSettings;
+    return await fetch(
+      `${embedSettings.baseApiUrl}/${embedId}/${sessionId}`,
+      {
+        method: "DELETE",
+      }
+    )
       .then((res) => res.ok)
       .catch(() => false);
   },
+  
   streamChat: async function (sessionId, embedSettings, message, handleChat) {
-    const { baseApiUrl, embedId, username } = embedSettings;
+    const { embedId, username } = embedSettings;
     const overrides = {
       prompt: embedSettings?.prompt ?? null,
       model: embedSettings?.model ?? null,
@@ -97,69 +117,72 @@ const ChatService = {
     };
 
     const ctrl = new AbortController();
-    await fetchEventSource(`${baseApiUrl}/${embedId}/stream-chat`, {
-      method: "POST",
-      body: JSON.stringify({
-        message,
-        sessionId,
-        username,
-        ...overrides,
-      }),
-      signal: ctrl.signal,
-      openWhenHidden: true,
-      async onopen(response) {
-        if (response.ok) {
-          return; // everything's good
-        } else if (response.status >= 400) {
-          await response
-            .json()
-            .then((serverResponse) => {
-              handleChat(serverResponse);
-            })
-            .catch(() => {
-              handleChat({
-                id: v4(),
-                type: "abort",
-                textResponse: null,
-                sources: [],
-                close: true,
-                error: `An error occurred while streaming response. Code ${response.status}`,
+    await fetchEventSource(
+      `${embedSettings.baseApiUrl}/${embedId}/stream-chat`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          message,
+          sessionId,
+          username,
+          ...overrides,
+        }),
+        signal: ctrl.signal,
+        openWhenHidden: true,
+        async onopen(response) {
+          if (response.ok) {
+            return; // everything's good
+          } else if (response.status >= 400) {
+            await response
+              .json()
+              .then((serverResponse) => {
+                handleChat(serverResponse);
+              })
+              .catch(() => {
+                handleChat({
+                  id: v4(),
+                  type: "abort",
+                  textResponse: null,
+                  sources: [],
+                  close: true,
+                  error: `An error occurred while streaming response. Code ${response.status}`,
+                });
               });
+            ctrl.abort();
+            throw new Error();
+          } else {
+            handleChat({
+              id: v4(),
+              type: "abort",
+              textResponse: null,
+              sources: [],
+              close: true,
+              error: `An error occurred while streaming response. Unknown Error.`,
             });
-          ctrl.abort();
-          throw new Error();
-        } else {
+            ctrl.abort();
+            throw new Error("Unknown Error");
+          }
+        },
+        async onmessage(msg) {
+          try {
+            const chatResult = JSON.parse(msg.data);
+            handleChat(chatResult);
+          } catch {}
+        },
+        onerror(err) {
           handleChat({
             id: v4(),
             type: "abort",
             textResponse: null,
             sources: [],
             close: true,
-            error: `An error occurred while streaming response. Unknown Error.`,
+            error: `An error occurred while streaming response. ${err.message}`,
           });
           ctrl.abort();
-          throw new Error("Unknown Error");
-        }
-      },
-      async onmessage(msg) {
-        try {
-          const chatResult = JSON.parse(msg.data);
-          handleChat(chatResult);
-        } catch {}
-      },
-      onerror(err) {
-        handleChat({
-          id: v4(),
-          type: "abort",
-          textResponse: null,
-          sources: [],
-          close: true,
-          error: `An error occurred while streaming response. ${err.message}`,
-        });
-        ctrl.abort();
-        throw new Error();
-      },
-    });
+          throw new Error();
+        },
+      }
+    );
   },
 };
 

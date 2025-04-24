@@ -87,7 +87,7 @@ export default function ChatContainer({
     setMessage("");
     setLoadingResponse(true);
   };
-  console.log("This is the chat history",chatHistory);
+  // console.log("This is the chat history",chatHistory);
   const sendCommand = (command, history = [], attachments = []) => {
     if (!command || command === "") return false;
 
@@ -175,9 +175,19 @@ export default function ChatContainer({
     };
   }, []);
 
+  // useEffect(() => {
+  //   scrollToBottom();
+  //   console.log("This is called")
+  // }, [chatHistory]);
   useEffect(() => {
-    scrollToBottom();
-  }, [chatHistory]);
+    // Use setTimeout to defer the scroll until after the next browser paint/layout cycle
+    const timerId = setTimeout(() => {
+      scrollToBottom();
+      // console.log("Scroll attempt after timeout"); // Optional: Check if this now works
+    }, 0); // 0ms delay pushes it to the end of the event loop
+
+    return () => clearTimeout(timerId); // Cleanup the timeout if component unmounts or history changes again quickly
+  }, [chatHistory]); // Dependency remains the same
 
   const handleScroll = () => {
     if (!containerRef.current) return;
@@ -203,16 +213,77 @@ export default function ChatContainer({
 
   const scrollToBottom = () => {
     if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+      const { scrollHeight, scrollTop, clientHeight } = containerRef.current;
+      // console.log(`SCROLL CHECK: scrollHeight=${scrollHeight}, clientHeight=${clientHeight}, currentScrollTop=${scrollTop}`);
+  
+      // Try multiple scroll approaches to ensure it works
+      try {
+        // Approach 1: Direct scrollTop assignment
+        containerRef.current.scrollTop = scrollHeight;
+        
+        // Approach 2: scrollTo method
+        containerRef.current.scrollTo({
+          top: scrollHeight,
+          behavior: "instant"
+        });
+        
+        // Approach 3: scrollIntoView on the last child
+        const lastChild = containerRef.current.lastElementChild;
+        if (lastChild) {
+          lastChild.scrollIntoView({ behavior: "instant", block: "end" });
+        }
+        
+        // console.log(`>>> Scrolling attempt to top: ${scrollHeight}`);
+        
+        // Check if scroll worked after a short delay
+        setTimeout(() => {
+          if (containerRef.current) {
+            const newScrollTop = containerRef.current.scrollTop;
+            // console.log(`>>> Scrolled. New scrollTop: ${newScrollTop}`);
+            
+            // If still not scrolled, try one more time with a different approach
+            if (newScrollTop === 0 && scrollHeight > 0) {
+              // console.log(">>> Scroll failed, trying alternative approach");
+              // Force scroll with a different method
+              containerRef.current.scrollTop = scrollHeight;
+              
+              // Try to scroll the window if needed
+              const containerRect = containerRef.current.getBoundingClientRect();
+              const isVisible = containerRect.top >= 0 && containerRect.bottom <= window.innerHeight;
+              if (isVisible) {
+                window.scrollTo({
+                  top: window.scrollY + scrollHeight,
+                  behavior: "instant"
+                });
+              }
+            }
+          }
+        }, 100);
+      } catch (error) {
+        console.error("Error during scroll:", error);
+      }
+    } else {
+      console.log("SCROLL CHECK FAILED: containerRef.current is null");
     }
   };
+  
+  useEffect(() => {
+    const timerId = setTimeout(scrollToBottom, 50); // Slightly longer delay (e.g., 50ms) might help
+    return () => clearTimeout(timerId);
+  }, [chatHistory]);
 
   return (
     <div className="allm-h-full allm-w-full allm-flex allm-flex-col allm-rounded-2xl allm-overflow-hidden">
-      <div ref={containerRef} className="allm-flex-grow allm-overflow-y-auto allm-pb-[80px] allm-no-scrollbar">
+      <div 
+        ref={containerRef} 
+        className="allm-flex-1 allm-overflow-y-auto allm-no-scrollbar" 
+        style={{ 
+          marginBottom: showInput ? '80px' : '0',
+          maxHeight: 'calc(100vh - 80px)',
+          overflowY: 'auto',
+          scrollBehavior: 'auto'
+        }}
+      >
         <ChatHistory settings={settings} history={chatHistory} />
         {!isAtBottom && (
           <div className="allm-fixed allm-bottom-[10rem] allm-right-[50px] allm-z-50 allm-cursor-pointer allm-animate-pulse">
@@ -231,7 +302,7 @@ export default function ChatContainer({
         )}
       </div>
       {showInput && (
-        <div className="allm-fixed allm-bottom-0 allm-left-0 allm-right-0 allm-z-10 allm-bg-white allm-border-t allm-border-gray-100 allm-rounded-b-2xl">
+        <div className="allm-absolute allm-bottom-0 allm-left-0 allm-right-0 allm-bg-white allm-border-t allm-border-gray-100 allm-rounded-b-2xl">
           <PromptInput
             message={message}
             submit={handleSubmit}

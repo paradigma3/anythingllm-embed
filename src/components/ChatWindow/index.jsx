@@ -27,29 +27,6 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
 
 
 
-  // // Update suggestions when chat history changes
-  // useEffect(() => {
-  //   // Get the last message to check its state
-  //   const lastMessage = chatHistory.length > 0 ? chatHistory[chatHistory.length - 1] : null;
-    
-  //   // Only update suggestions if:
-  //   // 1. We have a last message
-  //   // 2. It's from the assistant
-  //   // 3. It's not pending (loading)
-  //   // 4. It has suggestions
-  //   if (lastMessage && 
-  //       lastMessage.role === 'assistant' && 
-  //       !lastMessage.pending && 
-  //       lastMessage.suggestions && 
-  //       lastMessage.suggestions.length > 0) {
-  //     console.log('Updating suggestions from last message:', lastMessage.suggestions);
-  //     setCurrentSuggestions(lastMessage.suggestions);
-  //   } else if (!isLoadingResponse) {
-  //     // Clear suggestions when not loading and no valid suggestions
-  //     setCurrentSuggestions([]);
-  //   }
-  // }, [chatHistory, isLoadingResponse]);
-
   useEffect(() => {
     // Reset initial load flag after a short delay
     const timer = setTimeout(() => {
@@ -132,8 +109,7 @@ export default function ChatWindow({ closeChat, settings, sessionId, isChatOpen 
     );
   }
 
-  console.log(isLoadingResponse)
-  console.log("CHATWINDOW::suggestions",currentSuggestions)
+  
   return (
     <div className="allm-flex allm-flex-col allm-h-full allm-bg-white allm-rounded-2xl allm-overflow-hidden">
        {activeTab !== "home" && ( <><ChatWindowHeader

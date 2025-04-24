@@ -5,6 +5,8 @@ const DEFAULT_SETTINGS = {
   embedId: null, //required
   baseApiUrl: null, // required
   baseApiFaq: null, // FAQ endpoint
+  devUrl: null, // development URL for localhost
+  mainAttr: false, // whether to use main attributes
 
   // Override properties that can be defined.
   prompt: null, // override

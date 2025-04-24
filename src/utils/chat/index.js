@@ -23,7 +23,7 @@ export function updateAssistantMetadata(chatHistory, { suggestions = [], widgets
   // Create new history array with updated message
   const newHistory = [...chatHistory];
   newHistory[lastMessageIndex] = updatedMessage;
-  console.log("Updated history:", newHistory);
+  // console.log("Updated history:", newHistory);
   return newHistory;
 }
 
